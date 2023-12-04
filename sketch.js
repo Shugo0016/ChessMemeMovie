@@ -34,9 +34,19 @@ let moves = [ // All moves made in ChatGpt vs Stockfish
     captured: { position: [0, 5], piece: 'B' } // Captured piece during castling
   },
   {
-    from: [4, 0], to: [2, 2] ,
+    from: [4, 0], to: [2, 2],
     captured: { position: [2, 2], piece: 'N'}
-  }
+  },
+  {
+    from: [1, 3], to: [2, 2],
+    captured: { position: [2,2], piece: 'b'}
+  }, 
+  {from: [7, 5], to: [7, 4]},
+  {from: [6, 3], to: [5, 3]},
+
+  // Need to make pawn spawn in somehow that's the next step
+
+
 
 ];
 let currentMoveIndex = -1; // tracks the current move
