@@ -27,6 +27,16 @@ let moves = [ // All moves made in ChatGpt vs Stockfish
     king: { from: [7, 4], to: [7, 6] }, 
     rook: { from: [7, 7], to: [7, 5] }  
   },
+  {
+    castling: true,
+    king: { from: [0, 4], to: [0, 6] },
+    rook: { from: [0, 7], to: [0, 5]},
+    captured: { position: [0, 5], piece: 'B' } // Captured piece during castling
+  },
+  {
+    from: [4, 0], to: [2, 2] ,
+    captured: { position: [2, 2], piece: 'N'}
+  }
 
 ];
 let currentMoveIndex = -1; // tracks the current move
@@ -145,14 +155,21 @@ function performMove(move) {
   if (move.castling) {
     // Handle castling move
     moveKingAndRookForCastling(move.king, move.rook);
-  }
-  else {
+
+    // Handle rook capturing a piece during castling
+    if (move.capture) {
+      board[move.capture.position[0]][move.capture.position[1]] = ''; // Capture the piece
+    }
+  } else {
+    // Standard move handling
     let piece = board[move.from[0]][move.from[1]];
     board[move.to[0]][move.to[1]] = piece;
     board[move.from[0]][move.from[1]] = '';
   }
   drawBoard(); 
 }
+
+
 
 // Moves Rook and King in one move when button is pressed
 function moveKingAndRookForCastling(kingMove, rookMove) {
@@ -169,13 +186,16 @@ function undoMove(move) {
   if (move.castling) {
     // Undo castling move
     undoKingAndRookForCastling(move.king, move.rook);
-  }
-  else {
-    // Move the piece back a move
+
+    // If there was a capture during castling, restore the captured piece
+    if (move.captured) {
+      board[move.captured.position[0]][move.captured.position[1]] = move.captured.piece;
+    }
+  } else {
+    // Undo a standard move
     let piece = board[move.to[0]][move.to[1]];
     board[move.from[0]][move.from[1]] = piece;
 
-    // Restore the captured piece
     if (move.captured) {
       board[move.to[0]][move.to[1]] = move.captured;
     } else {
@@ -185,14 +205,19 @@ function undoMove(move) {
   drawBoard(); 
 }
 
+
+
+
 function undoKingAndRookForCastling(kingMove, rookMove) {
-  // Move the king back
+  // Move the king back to its original position
   let kingPiece = board[kingMove.to[0]][kingMove.to[1]];
   board[kingMove.from[0]][kingMove.from[1]] = kingPiece;
   board[kingMove.to[0]][kingMove.to[1]] = '';
 
-  // Move the rook back
+  // Move the rook back to its original position
   let rookPiece = board[rookMove.to[0]][rookMove.to[1]];
   board[rookMove.from[0]][rookMove.from[1]] = rookPiece;
   board[rookMove.to[0]][rookMove.to[1]] = '';
 }
+
+
