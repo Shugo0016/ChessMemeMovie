@@ -10,8 +10,13 @@ let board = [
   ['r', 'n', 'b', 'q', 'k', 'b', 'n', 'r']
 ];
 
+let lastSpawn = null;
+let whitePawn, blackPawn, whiteKnight, blackKnight, whiteRook, blackRook,
+    whiteQueen, blackQueen, whiteKing, blackKing, whiteBishop, blackBishop;
+
 let offsetX;
 let offsetY;
+
 
 let moves = [ // All moves made in ChatGpt vs Stockfish
   {from: [6, 4], to: [4, 4]},
@@ -43,20 +48,169 @@ let moves = [ // All moves made in ChatGpt vs Stockfish
   }, 
   {from: [7, 5], to: [7, 4]},
   {from: [6, 3], to: [5, 3]},
-
-  // Need to make pawn spawn in somehow that's the next step
   {
     spawn: {value: true, position: [2, 3], piece: "P"}
-  }
-
+  },
+  {from: [7,1], to: [6,3]},
+  {from: [2,5], to: [1,3]},
+  {from: [6,3], to: [7,5]},
+  {from: [1,3], to: [2,5]},
+  {from: [7,2], to: [3,6]},
+  {from: [1,7], to: [2,7]},
+  {from: [3,6], to: [4,7]},
+  {from: [1,6], to: [3,6]},
+  {
+    from: [5,5], to: [3,6],
+    captured: {position: [3,6], piece: "P"}
+  },
+  {
+    from: [2,7], to: [3,6],
+    captured: {position: [3,6], piece: "n"}
+  },
+  {
+    from: [4,7], to: [3,6],
+    captured: {position: [3,6], piece: "P"}
+  },
+  {
+    from: [2,5], to: [3,6],
+    captured: {position: [3,6], piece: "b"}
+  },
+  {from: [5,3], to: [4,3]},
+  {
+    from: [3,4], to: [4,3],
+    captured: {position: [4,3], piece: "P"}
+  },
+  {from: [6,5], to: [4,5]},
+  {from: [0,3], to: [4,7]},
+  {
+    from: [4,5], to: [3,6],
+    captured: {position: [3,6], piece: "N"}
+  },
+  {from: [4,7], to: [7,7]},
+  {
+    from: [7,6], to: [7,7],
+    captured: {position: [7,7], piece: "Q"}
+  },
+  {
+    spawn: {value: true, position: [5, 5], piece: "N"}
+  },
+  {
+    from: [7,3], to: [5,5],
+    captured: {position: [5,5], piece: "N"}
+  },
+  {
+    spawn: {value: true, position: [5, 5], piece: "Q"}
+  },
+  {
+    from: [6,6], to: [5,5],
+    captured: {position: [5,5], piece: "Q"}
+  },
+  {
+    spawn: {value: true, position: [2, 5], piece: "N"}
+  },
+  {
+    from: [3,6], to: [2,5],
+    captured: {position: [2,5], piece: "N"}
+  },
+  {
+    spawn: {value: true, position: [2, 5], piece: "P"}
+  },
+  {from: [7,5], to: [5,6]},
+  {from: [0,6], to: [0,7]},
+  {from: [7,0], to: [7,3]},
+  {from: [0,5], to: [0,6]},
+  {
+    from: [7,3], to: [4,3],
+    captured: {position: [4,3], piece: "P"}
+  },
+  {
+    from: [0,6], to: [4,3],
+    captured: {position: [4,3], piece: "r"}
+  },
+  {from: [7,4], to: [6,4]},
+  {from: [4,3], to: [7,6]},
+  {
+    from: [7,7], to: [7,6],
+    captured: {position: [7,6], piece: "R"}
+  },
+  {
+    spawn: {value: true, position: [6, 6], piece: "R"}
+  },
+  {
+    from: [6,4], to: [6,6],
+    captured: {position: [6,6], piece: "R"}
+  },
+  {from: [0,7], to: [1,6]},
+  {from: [5,6], to: [3,7]},
+  {from: [1,6], to: [0,7]},
+  {
+    from: [3,7], to: [2,5],
+    captured: {position: [2,5], piece: "P"}
+  },
+  {
+    spawn: {value: true, position: [2, 5], piece: "P"}
+  },
+  {from: [6,1], to: [4,1]},
+  {from: [2,0], to: [3,0]},
+  {
+    from: [4,1], to: [3,0],
+    captured: {position: [3,0], piece: "P"}
+  },
+  {
+    from: [1,1], to: [3,0],
+    captured: {position: [3,0], piece: "p"}
+  },
+  {from: [7,6], to: [6,5]},
+  {from: [0,7], to: [1, 4]},
+  {from: [6,7], to: [4, 7]},
+  {
+    spawn: {value: true, position: [3, 7], piece: "P"}
+  },
+  {from: [6,6], to: [0, 6]},
+  {
+    from: [0,0], to: [0,6],
+    captured: {position: [0,6], piece: "r"}
+  },
+  {from: [6,5], to: [5, 4]},
+  {from: [1,4], to: [1, 3]},
+  {from: [5,4], to: [4, 3]},
+  {
+    from: [1,3], to: [2,2],
+    captured: {position: [2,2], piece: "P"}
+  },
+  {from: [4,3], to: [5, 3]},
+  {from: [2,2], to: [3, 3]},
+  {
+    from: [4,4], to: [3,3],
+    captured: {position: [3,3], piece: "K"}
+  },
 
 ];
 let currentMoveIndex = -1; // tracks the current move
+
+function preload() {
+  whitePawn = loadImage('ChessPieces/WhitePawn.png', () => {
+      console.log("White pawn loaded successfully");
+  }, (err) => {
+      console.error("Failed to load white pawn", err);
+  });
+}
+
+let pieceImages;
 
 function setup() {
   createCanvas(820, 820);
   offsetX = (width - 400) / 2; 
   offsetY = (height - 400) / 2;
+
+  pieceImages = {
+    'P': blackPawn,
+    'p': whitePawn,
+    'N': blackKnight,
+    'n': whiteKnight,
+    // ... add other mappings
+  };
+
   drawBoard();
 }
 
@@ -71,6 +225,8 @@ function drawButtons() {
   rect(prevButtonX, buttonY, 80, 40); 
   text('Prev', prevButtonX + 40, buttonY + 20);
 }
+
+
 
 function drawBoard() {
   background(48, 46, 43); // Redraw the background
@@ -106,20 +262,29 @@ function drawBoard() {
   // Draw the squares and pieces
   for (let i = 0; i < numSquares; i++) {
     for (let j = 0; j < numSquares; j++) {
-      // Draw the squares
-      if ((i + j) % 2 == 0) {
-        fill(255);
-      } else {
-        fill(126, 151, 92);
-      }
-      rect(i * squareSize + offsetX, j * squareSize + offsetY, squareSize, squareSize);
-      let piece = board[j][i];
-      if (piece) {
-        fill(0); 
-        text(piece, i * squareSize + offsetX + squareSize / 2, j * squareSize + offsetY + squareSize / 2);
-      }
+        // Draw the square
+        if ((i + j) % 2 == 0) {
+            fill(255);
+        } else {
+            fill(126, 151, 92);
+        }
+        rect(i * squareSize + offsetX, j * squareSize + offsetY, squareSize, squareSize);
+
+        // Draw the piece
+        let piece = board[j][i];
+        
+        if (piece) {
+            let pieceImage = pieceImages[piece];
+            console.log("Piece character:", piece);
+            console.log("Image object:", pieceImages[piece]);
+            if (pieceImage) {
+                console.log("Piece Image", pieceImage);
+                image(pieceImage, i * squareSize + offsetX, j * squareSize + offsetY, squareSize, squareSize);
+            }
+        }
     }
-  }
+}
+ 
   noFill();
   rect(offsetX, offsetY, 400, 400); // Draw the outline around the chessboard
   drawButtons();
@@ -164,10 +329,17 @@ function mousePressed() {
 
 // Performs next move
 function performMove(move) {
+  console.log("Performing move:", move);
   if (move.castling) {
     // Handle castling move
     moveKingAndRookForCastling(move.king, move.rook);
-  } else {
+  }
+  else if (move.spawn && move.spawn.value) {
+      console.log("Spawning piece:", move.spawn);
+      spawnPiece(move.spawn);
+      console.log("Board state after spawning:", board);
+  }
+  else {
     // Standard move handling
     let piece = board[move.from[0]][move.from[1]];
 
@@ -179,26 +351,31 @@ function performMove(move) {
     board[move.to[0]][move.to[1]] = piece;
     board[move.from[0]][move.from[1]] = '';
   }
-
-  // Spawn a new piece if necessary
-  if (move.spawn && move.spawn.value) {
-    spawnPiece(move.spawn);
-  }
-
   drawBoard(); 
 }
-
-
-
 
 // Spawns piece at specific location on the board 
 function spawnPiece(pieceToSpawn) {
   let spawnLocationX = pieceToSpawn.position[0];
   let spawnLocationY = pieceToSpawn.position[1];
 
-  board[spawnLocationY][spawnLocationX] = pieceToSpawn.piece;
+  // Store the current state before spawning the new piece
+  lastSpawn = {
+    position: [spawnLocationX, spawnLocationY],
+    previousPiece: board[spawnLocationX][spawnLocationY] // Store the piece originally at the spawn location
+  };
 
+  board[spawnLocationX][spawnLocationY] = pieceToSpawn.piece;
 }
+
+function undoSpawnPiece() {
+  if (lastSpawn) {
+    let spawnLocationX = lastSpawn.position[0];
+    let spawnLocationY = lastSpawn.position[1];
+    board[spawnLocationX][spawnLocationY] = lastSpawn.previousPiece;
+  }
+}
+
 
 // Moves Rook and King in one move when button is pressed
 function moveKingAndRookForCastling(kingMove, rookMove) {
@@ -220,19 +397,24 @@ function undoMove(move) {
     if (move.captured) {
       board[move.captured.position[0]][move.captured.position[1]] = move.captured.piece;
     }
+  } else if (move.spawn && move.spawn.value) {
+    // Undo spawn move
+    undoSpawnPiece();
   } else {
-    // Undo a standard move
-    let piece = board[move.to[0]][move.to[1]];
-    board[move.from[0]][move.from[1]] = piece;
+    if (move.to && move.from) {
+      let piece = board[move.to[0]][move.to[1]];
+      board[move.from[0]][move.from[1]] = piece;
 
-    if (move.captured) {
-      board[move.to[0]][move.to[1]] = move.captured.piece;
-    } else {
-      board[move.to[0]][move.to[1]] = '';
+      if (move.captured) {
+        board[move.to[0]][move.to[1]] = move.captured.piece;
+      } else {
+        board[move.to[0]][move.to[1]] = '';
+      }
     }
   }
   drawBoard(); 
 }
+
 
 function undoKingAndRookForCastling(kingMove, rookMove) {
   // Move the king back to its original position
