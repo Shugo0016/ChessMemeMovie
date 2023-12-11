@@ -45,7 +45,9 @@ let moves = [ // All moves made in ChatGpt vs Stockfish
   {from: [6, 3], to: [5, 3]},
 
   // Need to make pawn spawn in somehow that's the next step
-
+  {
+    spawn: {value: true, position: [2, 3], piece: "P"}
+  }
 
 
 ];
@@ -165,21 +167,38 @@ function performMove(move) {
   if (move.castling) {
     // Handle castling move
     moveKingAndRookForCastling(move.king, move.rook);
-
-    // Handle rook capturing a piece during castling
-    if (move.capture) {
-      board[move.capture.position[0]][move.capture.position[1]] = ''; // Capture the piece
-    }
   } else {
     // Standard move handling
     let piece = board[move.from[0]][move.from[1]];
+
+    // Handle capturing a piece
+    if (move.captured) {
+      // Remove the captured piece
+      board[move.captured.position[0]][move.captured.position[1]] = '';
+    }
     board[move.to[0]][move.to[1]] = piece;
     board[move.from[0]][move.from[1]] = '';
   }
+
+  // Spawn a new piece if necessary
+  if (move.spawn && move.spawn.value) {
+    spawnPiece(move.spawn);
+  }
+
   drawBoard(); 
 }
 
 
+
+
+// Spawns piece at specific location on the board 
+function spawnPiece(pieceToSpawn) {
+  let spawnLocationX = pieceToSpawn.position[0];
+  let spawnLocationY = pieceToSpawn.position[1];
+
+  board[spawnLocationY][spawnLocationX] = pieceToSpawn.piece;
+
+}
 
 // Moves Rook and King in one move when button is pressed
 function moveKingAndRookForCastling(kingMove, rookMove) {
@@ -207,16 +226,13 @@ function undoMove(move) {
     board[move.from[0]][move.from[1]] = piece;
 
     if (move.captured) {
-      board[move.to[0]][move.to[1]] = move.captured;
+      board[move.to[0]][move.to[1]] = move.captured.piece;
     } else {
       board[move.to[0]][move.to[1]] = '';
     }
   }
   drawBoard(); 
 }
-
-
-
 
 function undoKingAndRookForCastling(kingMove, rookMove) {
   // Move the king back to its original position
