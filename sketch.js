@@ -194,6 +194,73 @@ function preload() {
   }, (err) => {
       console.error("Failed to load white pawn", err);
   });
+
+  whiteKnight = loadImage('ChessPieces/WhiteKnight.png', () => {
+    console.log("White Knight loaded successfully");
+}, (err) => {
+    console.error("Failed to load white knight", err);
+});
+
+whiteBishop = loadImage('ChessPieces/WhiteBishop.png', () => {
+  console.log("White Bishop loaded successfully");
+}, (err) => {
+  console.error("Failed to load white bishop", err);
+});
+
+whiteRook = loadImage('ChessPieces/WhiteRook.png', () => {
+  console.log("White Rook loaded successfully");
+}, (err) => {
+  console.error("Failed to load white rook", err);
+});
+
+whiteKing = loadImage('ChessPieces/WhiteKing.png', () => {
+  console.log("White king loaded successfully");
+}, (err) => {
+  console.error("Failed to load white king", err);
+});
+
+whiteQueen = loadImage('ChessPieces/WhiteQueen.png', () => {
+  console.log("White queen loaded successfully");
+}, (err) => {
+  console.error("Failed to load white queen", err);
+});
+
+blackPawn = loadImage('ChessPieces/BlackPawn.png', () => {
+  console.log("black pawn loaded successfully");
+}, (err) => {
+  console.error("Failed to load black pawn", err);
+});
+
+blackQueen = loadImage('ChessPieces/BlackQueen.png', () => {
+  console.log("black queen loaded successfully");
+}, (err) => {
+  console.error("Failed to load black queen", err);
+});
+
+blackKing = loadImage('ChessPieces/BlackKing.png', () => {
+  console.log("black king loaded successfully");
+}, (err) => {
+  console.error("Failed to load black King", err);
+});
+
+blackRook = loadImage('ChessPieces/BlackRook.png', () => {
+  console.log("black rook loaded successfully");
+}, (err) => {
+  console.error("Failed to load black Rook", err);
+});
+
+blackBishop = loadImage('ChessPieces/BlackBishop.png', () => {
+  console.log("black bishop loaded successfully");
+}, (err) => {
+  console.error("Failed to load black bishop", err);
+});
+
+blackKnight = loadImage('ChessPieces/BlackKnight.png', () => {
+  console.log("black knight loaded successfully");
+}, (err) => {
+  console.error("Failed to load black knight", err);
+});
+
 }
 
 let pieceImages;
@@ -208,6 +275,14 @@ function setup() {
     'p': whitePawn,
     'N': blackKnight,
     'n': whiteKnight,
+    'b': whiteBishop,
+    'B': blackBishop,
+    'q': whiteQueen,
+    'Q': blackQueen,
+    'k': whiteKing,
+    'K': blackKing,
+    'r': whiteRook,
+    'R': blackRook,
     // ... add other mappings
   };
 
