@@ -10,7 +10,10 @@ let board = [
   ['r', 'n', 'b', 'q', 'k', 'b', 'n', 'r']
 ];
 
+let spawnHistory = [];
+
 let lastSpawn = null;
+
 let whitePawn, blackPawn, whiteKnight, blackKnight, whiteRook, blackRook,
     whiteQueen, blackQueen, whiteKing, blackKing, whiteBishop, blackBishop;
 
@@ -80,7 +83,7 @@ let moves = [ // All moves made in ChatGpt vs Stockfish
   {from: [5,3], to: [4,3]},
   {
     from: [3,4], to: [4,3],
-    captured: {position: [4,3], piece: "P"}
+    captured: {position: [4,3], piece: "p"}
   },
   {from: [6,5], to: [4,5]},
   {from: [0,3], to: [4,7]},
@@ -150,7 +153,8 @@ let moves = [ // All moves made in ChatGpt vs Stockfish
     captured: {position: [2,5], piece: "P"}
   },
   {
-    spawn: {value: true, position: [2, 5], piece: "P"}
+    spawn: {value: true, position: [2, 5], piece: "P"},
+    captured: {position: [2,5], piece: "n"}
   },
   {from: [6,1], to: [4,1]},
   {from: [2,0], to: [3,0]},
@@ -292,6 +296,7 @@ capturedMoveSound = loadSound('SoundEffects/CaptureSound.mp3', () => {
 let pieceImages;
 
 function setup() {
+  console.log(moves.length)
   createCanvas(820, 820);
   offsetX = (width - 400) / 2; 
   offsetY = (height - 400) / 2;
@@ -309,7 +314,6 @@ function setup() {
     'K': blackKing,
     'r': whiteRook,
     'R': blackRook,
-    // ... add other mappings
   };
 
   drawBoard();
@@ -376,10 +380,7 @@ function drawBoard() {
         
         if (piece) {
             let pieceImage = pieceImages[piece];
-            console.log("Piece character:", piece);
-            console.log("Image object:", pieceImages[piece]);
             if (pieceImage) {
-                console.log("Piece Image", pieceImage);
                 image(pieceImage, i * squareSize + offsetX, j * squareSize + offsetY, squareSize, squareSize);
             }
         }
@@ -430,10 +431,17 @@ function mousePressed() {
 
 // Performs next move
 function performMove(move) {
-  console.log("Performing move:", move);
+  
+  console.log("Performing move:", currentMoveIndex);
 
   if (currentMoveIndex === 9) { 
     moveSound.play();
+  }
+  else if(currentMoveIndex === 14) {
+
+  }
+  else if(currentMoveIndex === 26) {
+
   }
   else if (move.castling) {
     castleMoveSound.play();
@@ -473,16 +481,17 @@ function spawnPiece(pieceToSpawn) {
   let spawnLocationY = pieceToSpawn.position[1];
 
   // Store the current state before spawning the new piece
-  lastSpawn = {
+  spawnHistory.push({
     position: [spawnLocationX, spawnLocationY],
     previousPiece: board[spawnLocationX][spawnLocationY] // Store the piece originally at the spawn location
-  };
+  });
 
   board[spawnLocationX][spawnLocationY] = pieceToSpawn.piece;
 }
 
 function undoSpawnPiece() {
-  if (lastSpawn) {
+  if (spawnHistory.length > 0) {
+    let lastSpawn = spawnHistory.pop(); // Get the last spawn move
     let spawnLocationX = lastSpawn.position[0];
     let spawnLocationY = lastSpawn.position[1];
     board[spawnLocationX][spawnLocationY] = lastSpawn.previousPiece;
