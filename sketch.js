@@ -17,6 +17,7 @@ let whitePawn, blackPawn, whiteKnight, blackKnight, whiteRook, blackRook,
 let offsetX;
 let offsetY;
 
+let moveSound;
 
 let moves = [ // All moves made in ChatGpt vs Stockfish
   {from: [6, 4], to: [4, 4]},
@@ -261,6 +262,12 @@ blackKnight = loadImage('ChessPieces/BlackKnight.png', () => {
   console.error("Failed to load black knight", err);
 });
 
+moveSound = loadSound('SoundEffects/screamingEmoji.mp3', () => {
+  console.log("Sound loaded successfully");
+}, (err) => {
+  console.error("Failed to load sound", err);
+});
+
 }
 
 let pieceImages;
@@ -405,6 +412,11 @@ function mousePressed() {
 // Performs next move
 function performMove(move) {
   console.log("Performing move:", move);
+
+  if (currentMoveIndex === 9) { 
+    moveSound.play();
+  }
+
   if (move.castling) {
     // Handle castling move
     moveKingAndRookForCastling(move.king, move.rook);
