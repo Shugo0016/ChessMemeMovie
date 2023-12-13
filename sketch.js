@@ -17,7 +17,8 @@ let whitePawn, blackPawn, whiteKnight, blackKnight, whiteRook, blackRook,
 let offsetX;
 let offsetY;
 
-let moveSound;
+let moveSound, regularMoveSound, castleMoveSound, capturedMoveSound;
+
 
 let moves = [ // All moves made in ChatGpt vs Stockfish
   {from: [6, 4], to: [4, 4]},
@@ -268,6 +269,24 @@ moveSound = loadSound('SoundEffects/screamingEmoji.mp3', () => {
   console.error("Failed to load sound", err);
 });
 
+regularMoveSound = loadSound('SoundEffects/ChessMove.mp3', () => {
+  console.log("Sound ChessMove loaded successfully");
+}, (err) => {
+  console.error("Failed to load ChessMove sound", err);
+});
+
+castleMoveSound = loadSound('SoundEffects/CastleMove.mp3', () => {
+  console.log("Sound CastleMove loaded successfully");
+}, (err) => {
+  console.error("Failed to load CastleMove sound", err);
+});
+
+capturedMoveSound = loadSound('SoundEffects/CaptureSound.mp3', () => {
+  console.log("Capture Sound loaded successfully");
+}, (err) => {
+  console.error("Failed to load Capture sound", err);
+});
+
 }
 
 let pieceImages;
@@ -416,6 +435,12 @@ function performMove(move) {
   if (currentMoveIndex === 9) { 
     moveSound.play();
   }
+  else if (move.castling) {
+    castleMoveSound.play();
+  }
+  else {
+    regularMoveSound.play();
+  }
 
   if (move.castling) {
     // Handle castling move
@@ -432,6 +457,7 @@ function performMove(move) {
 
     // Handle capturing a piece
     if (move.captured) {
+      capturedMoveSound.play();
       // Remove the captured piece
       board[move.captured.position[0]][move.captured.position[1]] = '';
     }
