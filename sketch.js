@@ -350,8 +350,8 @@ function drawButtons() {
   textAlign(CENTER, CENTER);
 
   // Draw the text on the buttons
-  text('Next', nextButtonX + buttonWidth / 2, buttonY + buttonHeight / 2);
-  text('Prev', prevButtonX + buttonWidth / 2, buttonY + buttonHeight / 2);
+  text('Next Move', nextButtonX + buttonWidth / 2, buttonY + buttonHeight / 2);
+  text('Prev Move', prevButtonX + buttonWidth / 2, buttonY + buttonHeight / 2);
 }
 
 
@@ -464,10 +464,23 @@ function mouseReleased() {
 }
 
 function draw() {
-  // Redraw the board and buttons each frame
   drawBoard();
   drawButtons();
+  
+  if (currentMoveIndex >= 0 && currentMoveIndex < moves.length) {
+    let move = moves[currentMoveIndex];
+    if (move.castling) {
+    
+      drawArrow(move.king.from[1], move.king.from[0], move.king.to[1], move.king.to[0]);
+
+      // drawArrow(move.rook.from[1], move.rook.from[0], move.rook.to[1], move.rook.to[0]);
+    } else if (!move.spawn) {
+      
+      drawArrow(move.from[1], move.from[0], move.to[1], move.to[0]);
+    }
+  }
 }
+
 
 // Performs next move
 function performMove(move) {
@@ -577,7 +590,6 @@ function undoMove(move) {
   drawBoard(); 
 }
 
-
 function undoKingAndRookForCastling(kingMove, rookMove) {
   // Move the king back to its original position
   let kingPiece = board[kingMove.to[0]][kingMove.to[1]];
@@ -590,4 +602,23 @@ function undoKingAndRookForCastling(kingMove, rookMove) {
   board[rookMove.to[0]][rookMove.to[1]] = '';
 }
 
+function drawArrow(fromX, fromY, toX, toY) {
+  push();
 
+  let squareSize = 400 / 8;
+  let startX = offsetX + fromX * squareSize + squareSize / 2;
+  let startY = offsetY + fromY * squareSize + squareSize / 2;
+  let endX = offsetX + toX * squareSize + squareSize / 2;
+  let endY = offsetY + toY * squareSize + squareSize / 2;
+
+  stroke(255, 140, 0, 150); // Orange, semi-transparent
+  strokeWeight(4);
+  fill(255, 140, 0, 150);
+
+  line(startX, startY, endX, endY);
+  let angle = atan2(endY - startY, endX - startX);
+  translate(endX, endY);
+  rotate(angle);
+  triangle(0, 0, -10, -5, -10, 5);
+  pop();
+}
