@@ -20,8 +20,10 @@ let whitePawn, blackPawn, whiteKnight, blackKnight, whiteRook, blackRook,
 let offsetX;
 let offsetY;
 
-let moveSound, regularMoveSound, castleMoveSound, capturedMoveSound;
+let isNextButtonPressed = false;
+let isPrevButtonPressed = false;
 
+let moveSound, regularMoveSound, castleMoveSound, capturedMoveSound;
 
 let moves = [ // All moves made in ChatGpt vs Stockfish
   {from: [6, 4], to: [4, 4]},
@@ -320,17 +322,37 @@ function setup() {
 }
 
 function drawButtons() {
-  let nextButtonX = offsetX + 500; 
-  let buttonY = offsetY + 450; 
-  fill(200);
-  rect(nextButtonX, buttonY, 80, 40); 
-  text('Next', nextButtonX + 40, buttonY + 20);
-
+  let nextButtonX = offsetX + 500;
   let prevButtonX = offsetX + 400;
-  rect(prevButtonX, buttonY, 80, 40); 
-  text('Prev', prevButtonX + 40, buttonY + 20);
-}
+  let buttonY = offsetY + 450;
+  let buttonWidth = 80;
+  let buttonHeight = 40;
 
+  // Next button appearance
+  if (isNextButtonPressed) {
+    fill(150); // Darker color to indicate pressing
+  } else {
+    fill(200); // Regular color
+  }
+  rect(nextButtonX, buttonY, buttonWidth, buttonHeight);
+
+  // Prev button appearance
+  if (isPrevButtonPressed) {
+    fill(150); // Darker color to indicate pressing
+  } else {
+    fill(200); // Regular color
+  }
+  rect(prevButtonX, buttonY, buttonWidth, buttonHeight);
+
+  // Text properties
+  fill(0); // Black color for text
+  textSize(16);
+  textAlign(CENTER, CENTER);
+
+  // Draw the text on the buttons
+  text('Next', nextButtonX + buttonWidth / 2, buttonY + buttonHeight / 2);
+  text('Prev', prevButtonX + buttonWidth / 2, buttonY + buttonHeight / 2);
+}
 
 
 function drawBoard() {
@@ -406,27 +428,45 @@ function movePiece(currentRow, currentCol, newRow, newCol) {
 
 // Checks if button was pressed
 function mousePressed() {
-  let buttonY = offsetY + 450;
   let nextButtonX = offsetX + 500;
   let prevButtonX = offsetX + 400;
+  let buttonY = offsetY + 450;
+  let buttonWidth = 80;
+  let buttonHeight = 40;
 
-  // Next button pressed
-  if (mouseX > nextButtonX && mouseX < nextButtonX + 80 &&
-      mouseY > buttonY && mouseY < buttonY + 40) {
+  // Check if Next button is pressed
+  isNextButtonPressed = mouseX > nextButtonX && mouseX < nextButtonX + buttonWidth &&
+                        mouseY > buttonY && mouseY < buttonY + buttonHeight;
+
+  // Check if Prev button is pressed
+  isPrevButtonPressed = mouseX > prevButtonX && mouseX < prevButtonX + buttonWidth &&
+                        mouseY > buttonY && mouseY < buttonY + buttonHeight;
+                      
+
+  if(isNextButtonPressed) {
     if (currentMoveIndex < moves.length - 1) {
       currentMoveIndex++;
       performMove(moves[currentMoveIndex]);
     }
   }
-
-  // Previous button pressed
-  if (mouseX > prevButtonX && mouseX < prevButtonX + 80 &&
-      mouseY > buttonY && mouseY < buttonY + 40) {
+  if(isPrevButtonPressed) {
     if (currentMoveIndex >= 0) {
       undoMove(moves[currentMoveIndex]);
       currentMoveIndex--;
     }
   }
+}
+
+function mouseReleased() {
+  // Reset button press state
+  isNextButtonPressed = false;
+  isPrevButtonPressed = false;
+}
+
+function draw() {
+  // Redraw the board and buttons each frame
+  drawBoard();
+  drawButtons();
 }
 
 // Performs next move
