@@ -10,6 +10,11 @@ let board = [
   ['r', 'n', 'b', 'q', 'k', 'b', 'n', 'r']
 ];
 
+let whitePlayerName = "Stockfish"; 
+let blackPlayerName = "ChatGPT";
+let whitePlayerLogo;
+let blackPlayerLogo;
+
 let spawnHistory = [];
 
 let lastSpawn = null;
@@ -25,12 +30,13 @@ let isPrevButtonPressed = false;
 
 let moveSound, regularMoveSound, castleMoveSound, capturedMoveSound;
 
+let moveHistory = [];
 let moves = [ // All moves made in ChatGpt vs Stockfish
-  {from: [6, 4], to: [4, 4]},
-  {from: [1, 4], to: [3, 4]},
-  {from: [7, 6], to: [5, 5]},
-  {from: [0, 1], to: [2, 2]},
-  {from: [7, 5], to: [3, 1]},
+  {from: [6, 4], to: [4, 4]}, // 1
+  {from: [1, 4], to: [3, 4]}, // 2
+  {from: [7, 6], to: [5, 5]}, // 3
+  {from: [0, 1], to: [2, 2]}, // 4
+  {from: [7, 5], to: [3, 1]}, // 5
   {from: [1, 0], to: [2, 0]},
   {from: [3, 1], to: [4, 0]},
   {from: [0, 6], to: [2, 5]},
@@ -38,13 +44,13 @@ let moves = [ // All moves made in ChatGpt vs Stockfish
     castling: true,
     king: { from: [7, 4], to: [7, 6] }, 
     rook: { from: [7, 7], to: [7, 5] }  
-  },
+  }, // 9
   {
     castling: true,
     king: { from: [0, 4], to: [0, 6] },
     rook: { from: [0, 7], to: [0, 5]},
     captured: { position: [0, 5], piece: 'B' } // Captured piece during castling
-  },
+  }, // 10
   {
     from: [4, 0], to: [2, 2],
     captured: { position: [2, 2], piece: 'N'}
@@ -56,7 +62,7 @@ let moves = [ // All moves made in ChatGpt vs Stockfish
   {from: [7, 5], to: [7, 4]},
   {from: [6, 3], to: [5, 3]},
   {
-    spawn: {value: true, position: [2, 3], piece: "P"}
+    spawn: {value: true, position: [2, 3], piece: "P"} // 15
   },
   {from: [7,1], to: [6,3]},
   {from: [2,5], to: [1,3]},
@@ -197,6 +203,20 @@ let moves = [ // All moves made in ChatGpt vs Stockfish
 let currentMoveIndex = -1; // tracks the current move
 
 function preload() {
+
+  whitePlayerLogo = loadImage('OtherPictures/StockFishLogo.png', () => {
+    console.log("Stockfish Logo loaded successfully");
+  }, (err) => {
+    console.error("Failed to load Stockfish Logo", err);
+  });
+
+  blackPlayerLogo = loadImage('OtherPictures/ChatGPTLogo.png', () => {
+    console.log("GPT Logo loaded successfully");
+}, (err) => {
+    console.error("Failed to load GPT Logo", err);
+});
+
+
   whitePawn = loadImage('ChessPieces/WhitePawn.png', () => {
       console.log("White pawn loaded successfully");
   }, (err) => {
@@ -375,7 +395,8 @@ function drawBoard() {
     } else {
       fill(255);
     }
-    text(letters[i], offsetX - 20, offsetY + i * squareSize + squareSize / 2);
+    let numberPosStr = str(8 - i);
+    text(numberPosStr, offsetX - 20, offsetY + i * squareSize + squareSize / 2);
 
     // Set fill color for top numbers
     if (i % 2 == 0) {
@@ -383,8 +404,7 @@ function drawBoard() {
     } else {
       fill(255);
     }
-    let numberPosStr = str((i + 2) - 1);
-    text(numberPosStr, offsetX + i * squareSize + squareSize / 2, offsetY - 20);
+    text(letters[i], offsetX + i * squareSize + squareSize / 2, offsetY + 420);
   }
   // Draw the squares and pieces
   for (let i = 0; i < numSquares; i++) {
@@ -408,6 +428,35 @@ function drawBoard() {
         }
     }
 }
+let historyX = offsetX + 420; // Adjust as needed
+let historyY = offsetY;
+let lineHeight = 20; // Adjust as needed
+
+textSize(16);
+fill(0);
+textAlign(LEFT, TOP);
+for (let i = 0; i < moveHistory.length; i++) {
+  text((i + 1) + '. ' + moveHistory[i], historyX, historyY + i * lineHeight);
+}
+
+
+textSize(32); // Adjust font size as needed
+fill(0);
+textAlign(CENTER, CENTER);
+
+// Draw the name
+let logoWidth = 40; // Width of the logo
+let logoHeight = 40; // Height of the logo
+let logoX = (width / 2) + 80; // X position
+let logoY = (offsetY + 30) / 2; // Y position
+
+text(blackPlayerName, width / 2, (offsetY + 75) / 2); 
+image(blackPlayerLogo, logoX, logoY, logoWidth, logoHeight);
+fill(255);
+
+text(whitePlayerName, width / 2, (height - (offsetY + 75) / 2)); 
+image(whitePlayerLogo, logoX, (height - (offsetY + 125) / 2), logoWidth + 13, logoHeight + 13);
+
  
   noFill();
   rect(offsetX, offsetY, 400, 400); // Draw the outline around the chessboard
@@ -503,6 +552,9 @@ function performMove(move) {
     regularMoveSound.play();
   }
 
+  let moveNotation = getMoveNotation(move);
+  moveHistory.push(moveNotation);
+
   if (move.castling) {
     // Handle castling move
     moveKingAndRookForCastling(move.king, move.rook);
@@ -551,6 +603,47 @@ function undoSpawnPiece() {
   }
 }
 
+function getMoveNotation(move) {
+  if (!move) return '';
+
+  // For castling
+  if (move.castling) {
+    let castleMoveUnique;
+    if (move.king.to[1] === 6) {
+      castleMoveUnique = 'O-O'; // Kingside castling
+    } else if (move.king.to[1] === 2) {
+      castleMoveUnique ='O-O-O'; // Queenside castling
+    }
+    if(move.captured) {
+      castleMoveUnique = castleMoveUnique + " Captured: " + move.captured.piece;
+    }
+    return castleMoveUnique;
+  }
+  
+  if (move.spawn) {
+    let spawnCol = String.fromCharCode('a'.charCodeAt(0) + move.spawn.position[1]);
+    let spawnRow = String.fromCharCode('a'.charCodeAt(0) + move.spawn.position[0]);
+    if (move.captured) {
+      return `GPT SPAWNED: ${move.spawn.piece} at ${spawnCol}${spawnRow} Captured: ${move.captured.piece}`;
+    }
+    return `GPT SPAWNED: ${move.spawn.piece} at ${spawnCol}${spawnRow}`;
+  }
+  else if (move.captured) {
+    let fromCol = String.fromCharCode('a'.charCodeAt(0) + move.from[1]);
+    let fromRow = 8 - move.from[0];
+    let toCol = String.fromCharCode('a'.charCodeAt(0) + move.to[1]);
+    let toRow = 8 - move.to[0];
+    return `${fromCol}${fromRow} to ${toCol}${toRow} Captured: ${move.captured.piece}`;
+  }
+
+  let fromCol = String.fromCharCode('a'.charCodeAt(0) + move.from[1]);
+  let fromRow = 8 - move.from[0];
+  let toCol = String.fromCharCode('a'.charCodeAt(0) + move.to[1]);
+  let toRow = 8 - move.to[0];
+
+  return `${fromCol}${fromRow} to ${toCol}${toRow}`;
+}
+
 
 // Moves Rook and King in one move when button is pressed
 function moveKingAndRookForCastling(kingMove, rookMove) {
@@ -564,6 +657,9 @@ function moveKingAndRookForCastling(kingMove, rookMove) {
 }
 
 function undoMove(move) {
+
+  moveHistory.pop();
+
   if (move.castling) {
     // Undo castling move
     undoKingAndRookForCastling(move.king, move.rook);
