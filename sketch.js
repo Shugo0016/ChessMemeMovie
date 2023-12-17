@@ -44,7 +44,7 @@ let scrollbar = {
 };
 
 // Variables for Sound Effects
-let moveSound, regularMoveSound, castleMoveSound, capturedMoveSound;
+let moveSound, regularMoveSound, castleMoveSound, capturedMoveSound, SpawnMoveSound;
 
 let moveHistory = [];
 let moves = [ // All moves made in ChatGpt vs Stockfish
@@ -329,6 +329,12 @@ function preload() {
     console.error("Failed to load Capture sound", err);
   });
 
+  SpawnMoveSound = loadSound('SoundEffects/HuhSound.mp3', () => {
+    console.log("Spawn Sound loaded successfully");
+  }, (err) => {
+    console.error("Failed to load Spawn sound", err);
+  });
+
 }
 
 let pieceImages;
@@ -457,11 +463,34 @@ function drawBoard() {
   fill(0);
   textAlign(LEFT, TOP);
   for (let i = 0; i < moveHistory.length; i++) {
+    if (i <= 13) {
+      if (i % 2 == 0 || i == 13) {
+        fill(255);
+      }
+      else {
+        fill(0);
+      }
+    }
+    else {
+      if (i % 2 == 1) {
+        fill(255);
+      }
+      else {
+        fill(0);
+      }
+    }
+   
+    let move = moveHistory[i];
     let yPosition = historyY + i * lineHeight + scrollOffset;
     if (yPosition >= historyY && yPosition < historyY + historyHeight - lineHeight) {
-      text((i + 1) + '. ' + moveHistory[i], historyX, yPosition);
+      text((i + 1) + ". " + move.notation, historyX, yPosition);
+      if (move.capturedImage) {
+        // Adjust the X position as needed to place the image right after the text
+        image(move.capturedImage, historyX + textWidth((i + 1) + ". " + move.notation), yPosition - 5, 20, 20);
+      }
     }
   }
+  
   let totalContentHeight = moveHistory.length * 20;
   let viewableAreaHeight = 400;
   if (totalContentHeight > viewableAreaHeight) {
@@ -566,19 +595,12 @@ function mouseDragged() {
   }
 }
 
-
-
-
-
-
 function mouseReleased() {
   dragging = false;
   isNextButtonPressed = false;
   isPrevButtonPressed = false;
   scrollbar.dragging = false;
 }
-
-
 
 function draw() {
   drawBoard();
@@ -587,11 +609,10 @@ function draw() {
   if (currentMoveIndex >= 0 && currentMoveIndex < moves.length) {
     let move = moves[currentMoveIndex];
     if (move.castling) {
-
       drawArrow(move.king.from[1], move.king.from[0], move.king.to[1], move.king.to[0]);
-
+    } else if (move.spawn && move.spawn.value) {
+      drawSpawnCircle(move.spawn.position[1], move.spawn.position[0]);
     } else if (!move.spawn) {
-
       drawArrow(move.from[1], move.from[0], move.to[1], move.to[0]);
     }
   }
@@ -601,13 +622,15 @@ function draw() {
 // Performs next move
 function performMove(move) {
 
-  console.log("Performing move:", currentMoveIndex);
+  let capturedImage = null;
+
+  // console.log("Performing move:", currentMoveIndex);
 
   if (currentMoveIndex === 9) {
     moveSound.play();
   }
   else if (currentMoveIndex === 14) {
-
+    SpawnMoveSound.play();
   }
   else if (currentMoveIndex === 26) {
 
@@ -619,8 +642,12 @@ function performMove(move) {
     regularMoveSound.play();
   }
 
+ 
   let moveNotation = getMoveNotation(move);
-  moveHistory.push(moveNotation);
+  if (move.captured) {
+    capturedImage = pieceImages[move.captured.piece];
+  }
+  moveHistory.push({ notation: moveNotation, capturedImage: capturedImage });
 
   if (move.castling) {
     // Handle castling move
@@ -661,7 +688,6 @@ function spawnPiece(pieceToSpawn) {
   board[spawnLocationX][spawnLocationY] = pieceToSpawn.piece;
 }
 
-
 // Undoes Spawn Piece 
 function undoSpawnPiece() {
   if (spawnHistory.length > 0) {
@@ -684,7 +710,7 @@ function getMoveNotation(move) {
       castleMoveUnique = 'O-O-O'; // Queenside castling
     }
     if (move.captured) {
-      castleMoveUnique = castleMoveUnique + " Captured: " + move.captured.piece;
+      castleMoveUnique = castleMoveUnique + " Captured: ";
     }
     return castleMoveUnique;
   }
@@ -693,16 +719,16 @@ function getMoveNotation(move) {
     let spawnCol = String.fromCharCode('a'.charCodeAt(0) + move.spawn.position[1]);
     let spawnRow = 8 - move.spawn.position[0];
     if (move.captured) {
-      return `GPT SPAWNED: ${move.spawn.piece} at ${spawnCol}${spawnRow} Captured: ${move.captured.piece}`;
+      return `Spawned: ${move.spawn.piece} at ${spawnCol}${spawnRow} Captured: `;
     }
-    return `GPT SPAWNED: ${move.spawn.piece} at ${spawnCol}${spawnRow}`;
+    return `Spawned: ${move.spawn.piece} at ${spawnCol}${spawnRow}`;
   }
   else if (move.captured) {
     let fromCol = String.fromCharCode('a'.charCodeAt(0) + move.from[1]);
     let fromRow = 8 - move.from[0];
     let toCol = String.fromCharCode('a'.charCodeAt(0) + move.to[1]);
     let toRow = 8 - move.to[0];
-    return `${fromCol}${fromRow} to ${toCol}${toRow} Captured: ${move.captured.piece}`;
+    return `${fromCol}${fromRow} to ${toCol}${toRow} Captured: `;
   }
 
   let fromCol = String.fromCharCode('a'.charCodeAt(0) + move.from[1]);
@@ -789,3 +815,18 @@ function drawArrow(fromX, fromY, toX, toY) {
   triangle(0, 0, -10, -5, -10, 5);
   pop();
 }
+
+function drawSpawnCircle(x, y) {
+  let squareSize = 400 / 8;
+  let circleX = offsetX + x * squareSize + squareSize / 2;
+  let circleY = offsetY + y * squareSize + squareSize / 2;
+  let circleRadius = squareSize ; // Adjust the size as needed
+
+  push(); // Save the current drawing state
+  stroke(255, 140, 0, 150); // Orange, semi-transparent
+  strokeWeight(6);
+  noFill();
+  ellipse(circleX, circleY, circleRadius);
+  pop(); // Restore the drawing state
+}
+
