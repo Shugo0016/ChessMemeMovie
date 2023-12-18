@@ -21,7 +21,8 @@ let lastSpawn = null;
 
 // Variables for piece Images
 let whitePawn, blackPawn, whiteKnight, blackKnight, whiteRook, blackRook,
-  whiteQueen, blackQueen, whiteKing, blackKing, whiteBishop, blackBishop;
+  whiteQueen, blackQueen, whiteKing, blackKing, whiteBishop, blackBishop, 
+  naniQueen;
 
 let offsetX;
 let offsetY;
@@ -30,21 +31,14 @@ let historyY;
 let isNextButtonPressed = false;
 let isPrevButtonPressed = false;
 
-// Scroll Bar Variables
 let scrollOffset = 0;
 let dragging = false;
 let startY;
-let scrollbar = {
-  x: 0,
-  y: 0,
-  width: 10,
-  height: 50,
-  dragging: false,
-  offsetY: 0
-};
+
 
 // Variables for Sound Effects
-let moveSound, regularMoveSound, castleMoveSound, capturedMoveSound, SpawnMoveSound;
+let moveSound, regularMoveSound, castleMoveSound, capturedMoveSound, SpawnMoveSound, 
+naniMoveSound, backMoveSound;
 
 let moveHistory = [];
 let moves = [ // All moves made in ChatGpt vs Stockfish
@@ -128,7 +122,7 @@ let moves = [ // All moves made in ChatGpt vs Stockfish
     captured: { position: [5, 5], piece: "N" }
   },
   {
-    spawn: { value: true, position: [5, 5], piece: "Q" }
+    spawn: { value: true, position: [5, 5], piece: "QN" }
   },
   {
     from: [6, 6], to: [5, 5],
@@ -305,6 +299,12 @@ function preload() {
     console.error("Failed to load black knight", err);
   });
 
+  naniQueen = loadImage('ChessPieces/naniQueen.png', () => {
+    console.log("nani Queen loaded successfully");
+  }, (err) => {
+    console.error("Failed to load naniQueen", err);
+  });
+
   moveSound = loadSound('SoundEffects/screamingEmoji.mp3', () => {
     console.log("Sound loaded successfully");
   }, (err) => {
@@ -335,6 +335,24 @@ function preload() {
     console.error("Failed to load Spawn sound", err);
   });
 
+  teleportMoveSound = loadSound('SoundEffects/TeleportSound.mp3', () => {
+    console.log("Tele Sound loaded successfully");
+  }, (err) => {
+    console.error("Failed to load tele sound", err);
+  });
+
+  naniMoveSound = loadSound('SoundEffects/naniSound.mp3', () => {
+    console.log("nani Sound loaded successfully");
+  }, (err) => {
+    console.error("Failed to load nani sound", err);
+  });
+
+  backMoveSound = loadSound('SoundEffects/69Sound.mp3', () => {
+    console.log("back Sound loaded successfully");
+  }, (err) => {
+    console.error("Failed to load back sound", err);
+  });
+
 }
 
 let pieceImages;
@@ -359,15 +377,16 @@ function setup() {
     'K': blackKing,
     'r': whiteRook,
     'R': blackRook,
+    'QN': naniQueen,
   };
 
   drawBoard();
 }
 
 function drawButtons() {
-  let nextButtonX = offsetX + 500;
-  let prevButtonX = offsetX + 400;
-  let buttonY = offsetY + 450;
+  let nextButtonX = offsetX + 230;
+  let prevButtonX = offsetX + 130;
+  let buttonY = offsetY + 525;
   let buttonWidth = 80;
   let buttonHeight = 40;
 
@@ -402,6 +421,7 @@ function drawBoard() {
   background(48, 46, 43); // Redraw the background
 
   let numSquares = 8;
+  let naniQueenSizeMultiplier = 1.75;
   let squareSize = 400 / numSquares;
   let letters = ["a", "b", "c", "d", "e", "f", "g", "h"];
   let offsetX = (width - 400) / 2;
@@ -442,8 +462,14 @@ function drawBoard() {
 
       // Draw the piece
       let piece = board[j][i];
-
-      if (piece) {
+      if (piece === 'QN') {  // If the piece is the naniQueen
+        let naniQueenWidth = squareSize * naniQueenSizeMultiplier;
+        let naniQueenHeight = squareSize * naniQueenSizeMultiplier;
+        let xPosition = i * squareSize + offsetX - (naniQueenWidth - squareSize) / 2;
+        let yPosition = j * squareSize + offsetY - (naniQueenHeight - squareSize) / 2;
+        image(naniQueen, xPosition, yPosition, naniQueenWidth, naniQueenHeight);
+      }
+      else if (piece) {
         let pieceImage = pieceImages[piece];
         if (pieceImage) {
           image(pieceImage, i * squareSize + offsetX, j * squareSize + offsetY, squareSize, squareSize);
@@ -457,54 +483,46 @@ function drawBoard() {
   let historyX = offsetX + 420;
   let historyY = offsetY;
   let lineHeight = 20;
-  let historyHeight = 400;
-
   textSize(16);
   fill(0);
   textAlign(LEFT, TOP);
+
+  
+
   for (let i = 0; i < moveHistory.length; i++) {
-    if (i <= 13) {
-      if (i % 2 == 0 || i == 13) {
-        fill(255);
-      }
-      else {
-        fill(0);
-      }
-    }
-    else {
-      if (i % 2 == 1) {
-        fill(255);
-      }
-      else {
-        fill(0);
-      }
-    }
-   
     let move = moveHistory[i];
     let yPosition = historyY + i * lineHeight + scrollOffset;
-    if (yPosition >= historyY && yPosition < historyY + historyHeight - lineHeight) {
+    if (yPosition >= historyY - lineHeight && yPosition < historyY + 400) {
+      if (i <= 13) {
+        if (i % 2 == 0 || i == 13) {
+          fill(255);
+        }
+        else {
+          fill(0);
+        }
+      }
+      else {
+        if (i % 2 == 1) {
+          fill(255);
+        }
+        else {
+          fill(0);
+        }
+      }
       text((i + 1) + ". " + move.notation, historyX, yPosition);
       if (move.capturedImage) {
-        // Adjust the X position as needed to place the image right after the text
         image(move.capturedImage, historyX + textWidth((i + 1) + ". " + move.notation), yPosition - 5, 20, 20);
+      }
+      else if (move.spawnImage) {
+        image(move.spawnImage, historyX + textWidth((i + 1) + ". Spawned:"), yPosition - 5, 20, 20);
+
+
+      }
+      else if (move.capturedImage && move.spawnImage) {
+
       }
     }
   }
-  
-  let totalContentHeight = moveHistory.length * 20;
-  let viewableAreaHeight = 400;
-  if (totalContentHeight > viewableAreaHeight) {
-    scrollbar.height = (viewableAreaHeight / totalContentHeight) * viewableAreaHeight;
-  } else {
-    scrollbar.height = viewableAreaHeight;
-  }
-
-  scrollbar.x = offsetX + 406;
-  scrollbar.y = historyY + (scrollOffset / totalContentHeight * viewableAreaHeight);
-
-  fill(150);
-  rect(scrollbar.x, scrollbar.y, scrollbar.width, scrollbar.height);
-
 
   textSize(32);
   fill(0);
@@ -543,9 +561,9 @@ function movePiece(currentRow, currentCol, newRow, newCol) {
 
 // Checks if button was pressed
 function mousePressed() {
-  let nextButtonX = offsetX + 500;
-  let prevButtonX = offsetX + 400;
-  let buttonY = offsetY + 450;
+  let nextButtonX = offsetX + 230;
+  let prevButtonX = offsetX + 130;
+  let buttonY = offsetY + 525;
   let buttonWidth = 80;
   let buttonHeight = 40;
 
@@ -574,24 +592,13 @@ function mousePressed() {
     dragging = true;
     startY = mouseY - scrollOffset;
   }
-
-  if (mouseX > scrollbar.x && mouseX < scrollbar.x + scrollbar.width &&
-    mouseY > scrollbar.y && mouseY < scrollbar.y + scrollbar.height) {
-    scrollbar.dragging = true;
-    scrollbar.offsetY = mouseY - scrollbar.y;
-  }
 }
 
 function mouseDragged() {
-  if (scrollbar.dragging) {
-    let newY = mouseY - scrollbar.offsetY;
-    newY = constrain(newY, historyY, historyY + 400 - scrollbar.height);
-    scrollbar.y = newY;
-    let scrollbarRatio = (scrollbar.y - historyY) / (400 - scrollbar.height);
-    let totalContentHeight = moveHistory.length * 20;
-    let maxScroll = totalContentHeight - 400;
-    scrollOffset = -scrollbarRatio * maxScroll;
-    scrollOffset = constrain(scrollOffset, -maxScroll, 0);
+  if (dragging) {
+    let newY = mouseY - startY;
+    scrollOffset = newY;
+    drawBoard(); // Redraw the board with updated scrollOffset
   }
 }
 
@@ -599,7 +606,6 @@ function mouseReleased() {
   dragging = false;
   isNextButtonPressed = false;
   isPrevButtonPressed = false;
-  scrollbar.dragging = false;
 }
 
 function draw() {
@@ -623,6 +629,7 @@ function draw() {
 function performMove(move) {
 
   let capturedImage = null;
+  let spawnImage = null;
 
   // console.log("Performing move:", currentMoveIndex);
 
@@ -632,9 +639,16 @@ function performMove(move) {
   else if (currentMoveIndex === 14) {
     SpawnMoveSound.play();
   }
-  else if (currentMoveIndex === 26) {
-
+  else if (currentMoveIndex === 26 || currentMoveIndex === 30 || currentMoveIndex === 32) {
+    teleportMoveSound.play();
   }
+  else if(currentMoveIndex === 36) {
+    naniMoveSound.play();
+  }
+  else if(currentMoveIndex === 38) {
+    backMoveSound.play();
+  }
+
   else if (move.castling) {
     castleMoveSound.play();
   }
@@ -647,7 +661,13 @@ function performMove(move) {
   if (move.captured) {
     capturedImage = pieceImages[move.captured.piece];
   }
-  moveHistory.push({ notation: moveNotation, capturedImage: capturedImage });
+  if (move.spawn) {
+    spawnImage = pieceImages[move.spawn.piece];
+  }
+  moveHistory.push({ notation: moveNotation, capturedImage: capturedImage , spawnImage: spawnImage});
+
+  let totalContentHeight = moveHistory.length * 20;
+  scrollOffset = max(400 - totalContentHeight, scrollOffset);
 
   if (move.castling) {
     // Handle castling move
@@ -719,9 +739,9 @@ function getMoveNotation(move) {
     let spawnCol = String.fromCharCode('a'.charCodeAt(0) + move.spawn.position[1]);
     let spawnRow = 8 - move.spawn.position[0];
     if (move.captured) {
-      return `Spawned: ${move.spawn.piece} at ${spawnCol}${spawnRow} Captured: `;
+      return `Spawned:  at ${spawnCol}${spawnRow} Captured: `;
     }
-    return `Spawned: ${move.spawn.piece} at ${spawnCol}${spawnRow}`;
+    return `Spawned:     at ${spawnCol}${spawnRow}`;
   }
   else if (move.captured) {
     let fromCol = String.fromCharCode('a'.charCodeAt(0) + move.from[1]);
