@@ -35,10 +35,12 @@ let scrollOffset = 0;
 let dragging = false;
 let startY;
 
+let player;
+
 
 // Variables for Sound Effects
 let moveSound, regularMoveSound, castleMoveSound, capturedMoveSound, SpawnMoveSound, 
-naniMoveSound, backMoveSound;
+naniMoveSound, backMoveSound, nahMoveSound, darthSound, betrayalMoveSound, victorySound;
 
 let moveHistory = [];
 let moves = [ // All moves made in ChatGpt vs Stockfish
@@ -212,6 +214,60 @@ let moves = [ // All moves made in ChatGpt vs Stockfish
 ];
 let currentMoveIndex = -1; // tracks the current move
 
+const chatMessages = {
+  0: "Hi I'm Stockfish :)",
+  1: "Yolo BOZO",
+  2: "Good Luck Have Fun",
+  3: "GG's Old man",
+  9: "TO EZ HERE A HANDICAP",
+  10: "Uhm, alright\nBishop Takes Knight",
+  11: "PATHETIC\nPAWN TAKES BISHOP",
+  13: "LMAO TO EZ STILL\nI SKIP MY MOVE PUNK",
+  14: "ACTUALLY NVM\nSpawn PAWN D6",
+  15: "You can't just say\nSpawn Pawn d6?\n Knight to d2 ",
+  16: "UR MAD CAUSE BAD",
+  23: "Knight takes Pawn g5",
+  24: "STUPPID\nPawn Takes Knight G5",
+  25: "Bishop Takes Pawn g5",
+  26: "UR BAD\nKNIGHT TAKES BISHOP G5\nTO EZ",
+  27: "Uhh, the Knight does\nnot move like that",
+  28: "WHATEVER KID\nI MAKE THE RULES",
+  30: "QUEEN TO H4!!!",
+  31: "You litterally teleported\nthrough your piece\nPawn takes Knight g5",
+  32: "SO MADDDDDD\nQUUEN TO H1",
+  33: "King takes Queen h1\n???????",
+  34: "ALL PART OF THE PLAN\nKNIGHT BACK TO F3\nGOTTEM",
+  35: "Doesn't really do anything\nQueenn takes Knight f3",
+  36: "YOU ACTIVATED\nMY TRAP CARD\nQueen TAKES QUEEN F3",
+  37: "what? That's just...\n Pawn takes Queen f3",
+  38: "GONNA CRY ABOUT IT\n????????",
+  39: "I have no words\nPawn takes Knight f6",
+  40: "MY PAWN KNOW\n PAWN REPLACES PAWN f6",
+  41: "Why do I bother",
+  45: "Rook Takes Pawn d4",
+  46: "PFFFFFFFFF\nROOK TAKES ROOK D4",
+  47: "ROOKS DON'T WORK\nLIKE THAT\n ROOK TO E2",
+  48: "HAHAHAHAHA\n ROOK TO G1",
+  49: "KING TAKES ROOK G1",
+  50: "GOTCHU ROOK SPAWN\nG2",
+  51: "WHATTTTTTT\nWHY EVEN DO THAT\n ROOK TAKES ROOK G2",
+  52: "I do WHAT I DO",
+  55: "Knight Takes Pawn f6",
+  56: "THAT'S ACTUALLY\nMY PAWN ON F6",
+  57: "...",
+  60: "YOINK",
+  61: "...",
+  62: "KING TO E7",
+  63: "So you're just\nblatantly cheating",
+  64: "IMMA DO MY OWN THING",
+  65: "BRO",
+  66: "HHAHAHAHAHAHAHAHAHHAHAHAHAHAHAHAHAHA",
+  70: "MINNNNNEE",
+  71: "WHAT THE HELL\nIS GOING ON",
+  72: "KING TO D5\nTHIS GAME IS MINE\nWAIT A SEC",
+  73: "SCREW YOU CHATGPT\nPAWN TAKES KING\nGG SUCKER",
+};
+
 function preload() {
 
   whitePlayerLogo = loadImage('OtherPictures/StockFishLogo.png', () => {
@@ -346,6 +402,31 @@ function preload() {
   }, (err) => {
     console.error("Failed to load nani sound", err);
   });
+
+  nahMoveSound = loadSound('SoundEffects/NahSound.mp3', () => {
+    console.log("nah Sound loaded successfully");
+  }, (err) => {
+    console.error("Failed to load nah sound", err);
+  });
+
+  betrayalMoveSound = loadSound('SoundEffects/BetrayalSound.mp3', () => {
+    console.log("Betrayal Sound loaded successfully");
+  }, (err) => {
+    console.error("Failed to load Betrayal sound", err);
+  });
+
+  darthSound = loadSound('SoundEffects/darthSound.mp3', () => {
+    console.log("darth Sound loaded successfully");
+  }, (err) => {
+    console.error("Failed to load darth sound", err);
+  });
+
+  victorySound = loadSound('SoundEffects/VictorySound.mp3', () => {
+    console.log("victory Sound loaded successfully");
+  }, (err) => {
+    console.error("Failed to load victory sound", err);
+  });
+
 
   backMoveSound = loadSound('SoundEffects/69Sound.mp3', () => {
     console.log("back Sound loaded successfully");
@@ -487,8 +568,6 @@ function drawBoard() {
   fill(0);
   textAlign(LEFT, TOP);
 
-  
-
   for (let i = 0; i < moveHistory.length; i++) {
     let move = moveHistory[i];
     let yPosition = historyY + i * lineHeight + scrollOffset;
@@ -510,16 +589,21 @@ function drawBoard() {
         }
       }
       text((i + 1) + ". " + move.notation, historyX, yPosition);
+      text((i + 1) + ". " + move.notation, historyX, yPosition);
+
+      // Initialize a variable to adjust the x position for the second image if needed
+      let xAdjust = 0;
+  
+      // Check and display the captured image
       if (move.capturedImage) {
         image(move.capturedImage, historyX + textWidth((i + 1) + ". " + move.notation), yPosition - 5, 20, 20);
+        xAdjust = 25; // Adjust this value as needed based on your layout
       }
-      else if (move.spawnImage) {
+  
+      // Check and display the spawned image
+      if (move.spawnImage) {
+        // Use xAdjust to shift the spawn image right if a captured image was also displayed
         image(move.spawnImage, historyX + textWidth((i + 1) + ". Spawned:"), yPosition - 5, 20, 20);
-
-
-      }
-      else if (move.capturedImage && move.spawnImage) {
-
       }
     }
   }
@@ -541,10 +625,44 @@ function drawBoard() {
   text(whitePlayerName, width / 2, (height - (offsetY + 150) / 2));
   image(whitePlayerLogo, logoX, (height - (offsetY + 200) / 2), logoWidth + 13, logoHeight + 13);
 
-
   noFill();
   rect(offsetX, offsetY, 400, 400); // Draw the outline around the chessboard
   drawButtons();
+  let chatMessage = chatMessages[currentMoveIndex];
+  if (chatMessage) {
+    if(currentMoveIndex <= 13) {
+      player = currentMoveIndex % 2 === 0 ? "white" : "black";
+    }
+    else {
+      player = currentMoveIndex % 2 === 0 ? "black" : "white";
+    }
+    
+    drawChatBubble(chatMessage, player);
+  }
+}
+
+function drawChatBubble(message, player) {
+  let x, y;
+  const bubbleWidth = 200; 
+  const bubbleHeight = 100; 
+  const logoWidth = 40; 
+  const logoOffset = 100; 
+
+  if (player === "white") {
+
+    x = (width / 2) + logoWidth + logoOffset;
+    y = (height - (offsetY + 150) / 2) - bubbleHeight / 2 + 20;
+  } else {
+   
+    x = (width / 2) + logoWidth + logoOffset;
+    y = (offsetY + 150) / 2 - bubbleHeight / 2;
+  }
+  fill(255); 
+  rect(x, y, bubbleWidth, bubbleHeight, 20);
+  fill(0); 
+  textSize(16);
+  textAlign(CENTER, CENTER);
+  text(message, x + bubbleWidth / 2, y + bubbleHeight / 2);
 }
 
 // Move Piece
@@ -624,7 +742,6 @@ function draw() {
   }
 }
 
-
 // Performs next move
 function performMove(move) {
 
@@ -636,26 +753,38 @@ function performMove(move) {
   if (currentMoveIndex === 9) {
     moveSound.play();
   }
-  else if (currentMoveIndex === 14) {
+  else if (currentMoveIndex === 14 ) {
     SpawnMoveSound.play();
   }
-  else if (currentMoveIndex === 26 || currentMoveIndex === 30 || currentMoveIndex === 32) {
+  else if (currentMoveIndex === 26 || currentMoveIndex === 30 || currentMoveIndex === 32 
+    || currentMoveIndex === 46 || currentMoveIndex === 48 || currentMoveIndex === 60 
+    || currentMoveIndex === 62 || currentMoveIndex === 66) {
     teleportMoveSound.play();
   }
   else if(currentMoveIndex === 36) {
     naniMoveSound.play();
   }
-  else if(currentMoveIndex === 38) {
+  else if(currentMoveIndex === 38 || currentMoveIndex === 64 || currentMoveIndex === 34) {
     backMoveSound.play();
   }
-
+  else if(currentMoveIndex === 40 || currentMoveIndex === 56) {
+    nahMoveSound.play();
+  }
+  else if(currentMoveIndex === 50) {
+    darthSound.play()
+  }
+  else if (currentMoveIndex === 70) {
+    betrayalMoveSound.play();
+  }
+  else if(currentMoveIndex === 73) {
+    victorySound.play();
+  }
   else if (move.castling) {
     castleMoveSound.play();
   }
   else {
     regularMoveSound.play();
   }
-
  
   let moveNotation = getMoveNotation(move);
   if (move.captured) {
@@ -674,9 +803,7 @@ function performMove(move) {
     moveKingAndRookForCastling(move.king, move.rook);
   }
   else if (move.spawn && move.spawn.value) {
-    console.log("Spawning piece:", move.spawn);
     spawnPiece(move.spawn);
-    console.log("Board state after spawning:", board);
   }
   else {
     // Standard move handling
@@ -739,7 +866,7 @@ function getMoveNotation(move) {
     let spawnCol = String.fromCharCode('a'.charCodeAt(0) + move.spawn.position[1]);
     let spawnRow = 8 - move.spawn.position[0];
     if (move.captured) {
-      return `Spawned:  at ${spawnCol}${spawnRow} Captured: `;
+      return `Spawned:     at ${spawnCol}${spawnRow} Captured: `;
     }
     return `Spawned:     at ${spawnCol}${spawnRow}`;
   }
